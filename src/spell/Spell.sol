@@ -53,11 +53,10 @@ contract SpellAction {
         address MCD_DAI         = CHANGELOG.getAddress("MCD_DAI");
         address MCD_GOV         = CHANGELOG.getAddress("MCD_GOV");
 
-
         address MCD_MSM_MKR = address(new DssMsm(address(MCD_GOV), address(MCD_DAI)));
 
         require(address(DssMsm(MCD_MSM_MKR).dai()) == MCD_DAI, "psm-dai-not-match");
-        require(address(DssMsm(MCD_MSM_MKR).gem()) == MCD_GOV, "psm-gem-not-match");
+        require(address(DssMsm(MCD_MSM_MKR).token()) == MCD_GOV, "psm-gem-not-match");
 
         // Set MCD_MSM_MKR param
         DssMsm(MCD_MSM_MKR).file("price", 500 * WAD);

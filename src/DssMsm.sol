@@ -48,10 +48,10 @@ contract DssMsm {
     modifier auth { require(wards[msg.sender] == 1); _; }
 
     DaiAbstract public dai;
-    GemAbstract public gem;
+    GemAbstract public token;
     uint256 public dec;
 
-    uint256  internal to18ConversionFactor;
+    uint256 internal to18ConversionFactor;
 
     uint256 public tin;         // toll in [wad]
     uint256 public tout;        // toll out [wad]
@@ -64,25 +64,25 @@ contract DssMsm {
     event Deny(address indexed user);
     event File(bytes32 indexed what, uint256 data);
     event File(bytes32 indexed what, bool data);
-    event SellGem(address indexed owner, uint256 value, uint256 fee);
-    event BuyGem(address indexed owner, uint256 value, uint256 fee);
+    event Sell(address indexed owner, uint256 value, uint256 fee);
+    event Buy(address indexed owner, uint256 value, uint256 fee);
 
     // --- Init ---
     constructor(address gem_, address dai_) public {
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
 
-        gem = GemAbstract(gem_);
+        token = GemAbstract(gem_);
         dai = DaiAbstract(dai_);
 
         burn = false;
-        reserve = 100*WAD;
+        reserve = 1000*WAD;
         price = 500*WAD;
         tin = 0;
         tout = 2*WAD;
 
-        require(gem.decimals() <= 18, "DssMsm/decimals-18-or-higher");
-        to18ConversionFactor = 10 ** (18 - uint(gem.decimals()));
+        require(GemAbstract(gem_).decimals() <= 18, "DssMsm/decimals-18-or-higher");
+        to18ConversionFactor = 10 ** (18 - uint(GemAbstract(gem_).decimals()));
     }
 
     // --- Math ---
@@ -123,36 +123,36 @@ contract DssMsm {
     }
 
     // --- Primary Functions ---
-    function sellGem(address usr, uint256 gemAmt) external {
+    function sell(address usr, uint256 gemAmt) external {
 
         uint256 gemAmt18 = mul(gemAmt, to18ConversionFactor);
         uint256 gemAmtPrice = mul(gemAmt18, price) / WAD;
         uint256 daiAmt = mul(gemAmtPrice, sub(1 * WAD, tin)) / WAD;
 
-        emit SellGem(usr, gemAmt, daiAmt);
+        emit Sell(usr, gemAmt, daiAmt);
 
-        require(gem.transferFrom(msg.sender, address(this), gemAmt), "DssMsm/failed-sell-transfer-gem");
+        require(token.transferFrom(msg.sender, address(this), gemAmt), "DssMsm/failed-sell-transfer-gem");
         require(dai.transfer(msg.sender, daiAmt), "DssMsm/failed-sell-transfer-dai");
 
-        if(burn && reserve < mul(gem.balanceOf(address(this)), to18ConversionFactor)) {
+        if(burn && reserve < mul(token.balanceOf(address(this)), to18ConversionFactor)) {
             uint _amountReserveLeft18 = mul(reserve, (90 * WAD)/100 ) / WAD; // 90% total reserve
-            uint _amountGem18 = mul(gem.balanceOf(address(this)), to18ConversionFactor);
+            uint _amountGem18 = mul(token.balanceOf(address(this)), to18ConversionFactor);
 
-            gem.burn(sub(_amountGem18, _amountReserveLeft18) / to18ConversionFactor);
+            token.burn(sub(_amountGem18, _amountReserveLeft18) / to18ConversionFactor);
         }
 
     }
 
-    function buyGem(address usr, uint256 gemAmt) external {
+    function buy(address usr, uint256 gemAmt) external {
 
         uint256 gemAmt18 = mul(gemAmt, to18ConversionFactor);
         uint256 gemAmtPrice = mul(gemAmt18, price) / WAD;
         uint256 daiAmt = mul(gemAmtPrice, add(1 * WAD, tout)) / WAD;
 
-        emit BuyGem(usr, gemAmt, daiAmt);
+        emit Buy(usr, gemAmt, daiAmt);
 
         require(dai.transferFrom(msg.sender, address(this), daiAmt), "DssMsm/failed-buy-transfer-dai");
-        require(gem.transfer(address(msg.sender), gemAmt), "DssMsm/failed-buy-transfer-gem");
+        require(token.transfer(address(msg.sender), gemAmt), "DssMsm/failed-buy-transfer-gem");
 
     }
 

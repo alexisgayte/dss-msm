@@ -62,14 +62,14 @@ contract User {
         msm = msm_;
     }
 
-    function sellGem(uint256 wad) public {
-        DSToken(address(msm.gem())).approve(address(msm));
-        msm.sellGem(address(this), wad);
+    function sell(uint256 wad) public {
+        DSToken(address(msm.token())).approve(address(msm));
+        msm.sell(address(this), wad);
     }
 
-    function buyGem(uint256 wad) public {
+    function buy(uint256 wad) public {
         dai.approve(address(msm), uint256(-1));
-        msm.buyGem(address(this), wad);
+        msm.buy(address(this), wad);
     }
 
 }
@@ -110,7 +110,7 @@ contract DssMsmTest is DSTest {
 
     }
 
-    function test_sellGem() public {
+    function test_sell() public {
         assertEq(mkr.balanceOf(me), 1000 * MKR_DEC);
         assertEq(dai.balanceOf(me), 0);
 
@@ -118,7 +118,7 @@ contract DssMsmTest is DSTest {
         assertEq(dai.balanceOf(address(msm)), 1000000 * WAD);
 
         mkr.approve(address(msm));
-        msm.sellGem(me, 200 * MKR_DEC);
+        msm.sell(me, 200 * MKR_DEC);
 
         assertEq(mkr.balanceOf(me), 800 * MKR_DEC);
         assertEq(dai.balanceOf(me), 100000 * WAD);
@@ -127,14 +127,14 @@ contract DssMsmTest is DSTest {
         assertEq(dai.balanceOf(address(msm)), 900000 * WAD);
     }
 
-    function test_sellGem_fee() public {
+    function test_sell_fee() public {
         msm.file("tin", 10 * WAD / 100);
 
         assertEq(mkr.balanceOf(me), 1000 * MKR_DEC);
         assertEq(dai.balanceOf(me), 0);
 
         mkr.approve(address(msm));
-        msm.sellGem(me, 200 * MKR_DEC);
+        msm.sell(me, 200 * MKR_DEC);
 
         assertEq(mkr.balanceOf(me), 800 * MKR_DEC);
         assertEq(dai.balanceOf(me), 90000 * WAD);
@@ -150,9 +150,9 @@ contract DssMsmTest is DSTest {
         assertEq(dai.balanceOf(me), 0);
 
         mkr.approve(address(msm));
-        msm.sellGem(me, 100 * MKR_DEC);
+        msm.sell(me, 100 * MKR_DEC);
         dai.approve(address(msm), 500000 *WAD);
-        msm.buyGem(me, 100 * MKR_DEC);
+        msm.buy(me, 100 * MKR_DEC);
 
         assertEq(mkr.balanceOf(me), 1000 * MKR_DEC);
         assertEq(dai.balanceOf(me), 0);
@@ -169,13 +169,13 @@ contract DssMsmTest is DSTest {
         assertEq(dai.balanceOf(me), 0);
 
         mkr.approve(address(msm));
-        msm.sellGem(me, 200 * MKR_DEC);
+        msm.sell(me, 200 * MKR_DEC);
 
         assertEq(mkr.balanceOf(me), 800 * MKR_DEC);
         assertEq(dai.balanceOf(me), 100000 * WAD);
 
         dai.approve(address(msm), 100000 * WAD);
-        msm.buyGem(me, 100 * MKR_DEC);
+        msm.buy(me, 100 * MKR_DEC);
 
         assertEq(mkr.balanceOf(me), 900 * MKR_DEC);
         assertEq(dai.balanceOf(me), 0 * WAD);
@@ -191,14 +191,14 @@ contract DssMsmTest is DSTest {
         assertEq(dai.balanceOf(me), 0);
 
         mkr.approve(address(msm));
-        msm.sellGem(me, 200 * MKR_DEC);
+        msm.sell(me, 200 * MKR_DEC);
 
         assertEq(mkr.balanceOf(me), 800 * MKR_DEC);
         assertEq(dai.balanceOf(me), 100000 * WAD);
 
         User someUser = new User(dai, msm);
         dai.mint(address(someUser), 100000 * WAD);
-        someUser.buyGem(100 * MKR_DEC);
+        someUser.buy(100 * MKR_DEC);
 
         assertEq(mkr.balanceOf(me), 800 * MKR_DEC);
         assertEq(mkr.balanceOf(address(someUser)), 100 * MKR_DEC);
@@ -207,7 +207,7 @@ contract DssMsmTest is DSTest {
 
     }
 
-    function test_buyGem_burn_reserve() public {
+    function test_buy_burn_reserve() public {
         msm.file("reserve", 50 * WAD);
         msm.file("burn", true);
 
@@ -218,7 +218,7 @@ contract DssMsmTest is DSTest {
         assertEq(dai.balanceOf(address(msm)), 1000000 * WAD);
 
         mkr.approve(address(msm));
-        msm.sellGem(me, 200 * MKR_DEC);
+        msm.sell(me, 200 * MKR_DEC);
 
         assertEq(mkr.balanceOf(me), 800 * MKR_DEC);
         assertEq(dai.balanceOf(me), 100000 * WAD);
@@ -229,7 +229,7 @@ contract DssMsmTest is DSTest {
         assertEq(mkr.totalSupply(), 845 * MKR_DEC);
     }
 
-    function test_buyGem_reserve_reach_with_burn_disable() public {
+    function test_buy_reserve_reach_with_burn_disable() public {
         msm.file("reserve", 50 * WAD);
         msm.file("burn", false);
 
@@ -240,7 +240,7 @@ contract DssMsmTest is DSTest {
         assertEq(dai.balanceOf(address(msm)), 1000000 * WAD);
 
         mkr.approve(address(msm));
-        msm.sellGem(me, 200 * MKR_DEC);
+        msm.sell(me, 200 * MKR_DEC);
 
         assertEq(mkr.balanceOf(me), 800 * MKR_DEC);
         assertEq(dai.balanceOf(me), 100000 * WAD);
@@ -249,9 +249,9 @@ contract DssMsmTest is DSTest {
         assertEq(dai.balanceOf(address(msm)), 900000 * WAD);
     }
 
-    function testFail_sellGem_insufficient_gem() public {
+    function testFail_sell_insufficient_gem() public {
         User user1 = new User(dai, msm);
-        user1.sellGem(40 * MKR_DEC);
+        user1.sell(40 * MKR_DEC);
     }
 
     function testFail_swap_both_small_fee_insufficient_dai() public {
@@ -260,31 +260,31 @@ contract DssMsmTest is DSTest {
 
         User user1 = new User(dai, msm);
         mkr.transfer(address(user1), 40 * MKR_DEC);
-        user1.sellGem(40 * MKR_DEC);
-        user1.buyGem(40 * MKR_DEC);
+        user1.sell(40 * MKR_DEC);
+        user1.buy(40 * MKR_DEC);
     }
 
-    function testFail_sellGem_over_line() public {
+    function testFail_sell_over_line() public {
         mkr.mint(1000 * MKR_DEC);
         mkr.approve(address(mkr));
-        msm.buyGem(me, 2000 * MKR_DEC);
+        msm.buy(me, 2000 * MKR_DEC);
     }
 
     function testFail_two_users_insufficient_dai() public {
         User user1 = new User(dai, msm);
         mkr.transfer(address(user1), 40 * MKR_DEC);
-        user1.sellGem(40 * MKR_DEC);
+        user1.sell(40 * MKR_DEC);
 
         User user2 = new User(dai, msm);
         dai.mint(address(user2), 39 ether);
-        user2.buyGem(40 * MKR_DEC);
+        user2.buy(40 * MKR_DEC);
     }
 
     function test_swap_both_zero() public {
         mkr.approve(address(mkr), uint(-1));
-        msm.sellGem(me, 0);
+        msm.sell(me, 0);
         dai.approve(address(msm), uint(-1));
-        msm.buyGem(me, 0);
+        msm.buy(me, 0);
     }
 
 
