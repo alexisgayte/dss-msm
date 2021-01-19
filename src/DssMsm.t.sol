@@ -3,7 +3,13 @@ pragma solidity ^0.6.7;
 import "ds-test/test.sol";
 import "./DssMsm.sol";
 import "../lib/dss/lib/ds-token/src/token.sol";
-import {Dai}              from  "../lib/dss/src/dai.sol";
+import {Dai} from  "../lib/dss/src/dai.sol";
+
+interface Hevm {
+    function warp(uint256) external;
+    function store(address,bytes32,bytes32) external;
+    function roll(uint256) external;
+}
 
 contract MkrAuthority {
     address public root;
@@ -75,7 +81,7 @@ contract User {
 }
 
 contract DssMsmTest is DSTest {
-
+    Hevm hevm;
     address me;
 
     TestToken mkr;
@@ -92,7 +98,7 @@ contract DssMsmTest is DSTest {
 
     function setUp() public {
         me = address(this);
-
+        hevm = Hevm(address(CHEAT_CODE));
         mkr = new TestToken("MKR", 18);
         MkrAuthority mkrAuthority = new MkrAuthority();
         mkr.setAuthority(DSAuthority(address(mkrAuthority)));
@@ -110,6 +116,24 @@ contract DssMsmTest is DSTest {
 
     }
 
+    function test_reserve() public {
+
+        (uint256 daireserve, uint256 gemreserve, uint256 blockTimestampLast) = msm.getReserves();
+
+        assertEq(daireserve, 1000000 ether);
+        assertEq(gemreserve, 0);
+        assertEq(blockTimestampLast, 0);
+
+        mkr.approve(address(msm));
+        msm.sell(me, 1 * MKR_DEC);
+        hevm.warp(1 hours);
+
+        (daireserve, gemreserve, blockTimestampLast) = msm.getReserves();
+        assertEq(daireserve, 999500 ether);
+        assertEq(gemreserve, 1 ether);
+        assertEq(blockTimestampLast, 0);
+    }
+
     function test_sell() public {
         assertEq(mkr.balanceOf(me), 1000 * MKR_DEC);
         assertEq(dai.balanceOf(me), 0);
@@ -125,6 +149,33 @@ contract DssMsmTest is DSTest {
 
         assertEq(mkr.balanceOf(address(msm)), 200 * MKR_DEC);
         assertEq(dai.balanceOf(address(msm)), 900000 * WAD);
+    }
+
+    function test_sell_price_change() public {
+        assertEq(mkr.balanceOf(me), 1000 * MKR_DEC);
+        assertEq(dai.balanceOf(me), 0);
+
+        assertEq(mkr.balanceOf(address(msm)), 0 * MKR_DEC);
+        assertEq(dai.balanceOf(address(msm)), 1000000 * WAD);
+
+        hevm.warp(1 hours);
+        msm.file("price", 1000 * WAD);
+
+        mkr.approve(address(msm));
+        msm.sell(me, 200 * MKR_DEC);
+
+        assertEq(mkr.balanceOf(me), 800 * MKR_DEC);
+        assertEq(dai.balanceOf(me), 200000 * WAD);
+
+        assertEq(mkr.balanceOf(address(msm)), 200 * MKR_DEC);
+        assertEq(dai.balanceOf(address(msm)), 800000 * WAD);
+
+        (uint256 daireserve, uint256 gemreserve, uint256 blockTimestampLast) = msm.getReserves();
+
+        assertEq(daireserve, 800000 ether);
+        assertEq(gemreserve, 200 ether);
+        assertEq(blockTimestampLast, 3600);
+
     }
 
     function test_sell_fee() public {

@@ -47,6 +47,8 @@ contract DssMsm {
     function deny(address usr) external auth { wards[usr] = 0; emit Deny(usr); }
     modifier auth { require(wards[msg.sender] == 1); _; }
 
+    // --- param
+
     DaiAbstract public dai;
     GemAbstract public token;
     uint256 public dec;
@@ -57,7 +59,8 @@ contract DssMsm {
     uint256 public tout;        // toll out [wad]
     uint256 public price;       // price [wad]
     uint256 public reserve;     // gem amount keep to buy [wad]
-    bool public burn;     // gem amount keep to buy [wad]
+    bool    public burn;        // burn or not the assert
+    uint256 public blockTimestampLast;
 
     // --- Events ---
     event Rely(address indexed user);
@@ -80,6 +83,7 @@ contract DssMsm {
         price = 500*WAD;
         tin = 0;
         tout = 2*WAD;
+        blockTimestampLast = block.timestamp;
 
         require(GemAbstract(gem_).decimals() <= 18, "DssMsm/decimals-18-or-higher");
         to18ConversionFactor = 10 ** (18 - uint(GemAbstract(gem_).decimals()));
@@ -108,7 +112,10 @@ contract DssMsm {
             require(data < 10*WAD , "DssMsm/more-1000-percent");
             tout = data;
         }
-        else if (what == "price") price = data;
+        else if (what == "price") {
+            price = data;
+            blockTimestampLast = block.timestamp;
+        }
         else if (what == "reserve") reserve = data;
         else revert("DssMsm/file-unrecognized-param");
 
@@ -121,6 +128,15 @@ contract DssMsm {
 
         emit File(what, data);
     }
+
+    // --- View ---
+
+    function getReserves() public view returns (uint256 _reserve0, uint256 _reserve1, uint256 _blockTimestampLast) {
+        _reserve0 = dai.balanceOf(address(this));
+        _reserve1 = token.balanceOf(address(this));
+        _blockTimestampLast = blockTimestampLast;
+    }
+
 
     // --- Primary Functions ---
     function sell(address usr, uint256 gemAmt) external {
