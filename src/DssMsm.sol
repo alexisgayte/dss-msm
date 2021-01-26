@@ -1,43 +1,7 @@
 pragma solidity ^0.6.7;
 
-interface GemAbstract {
-    function totalSupply() external view returns (uint256);
-    function balanceOf(address) external view returns (uint256);
-    function allowance(address, address) external view returns (uint256);
-    function approve(address, uint256) external returns (bool);
-    function transfer(address, uint256) external returns (bool);
-    function transferFrom(address, address, uint256) external returns (bool);
-
-    function burn(uint256) external;
-    function decimals() external view returns (uint8);
-}
-
-interface DaiAbstract {
-    function wards(address) external view returns (uint256);
-    function rely(address) external;
-    function deny(address) external;
-    function name() external view returns (string memory);
-    function symbol() external view returns (string memory);
-    function version() external view returns (string memory);
-    function decimals() external view returns (uint8);
-    function totalSupply() external view returns (uint256);
-    function balanceOf(address) external view returns (uint256);
-    function allowance(address, address) external view returns (uint256);
-    function nonces(address) external view returns (uint256);
-    function DOMAIN_SEPARATOR() external view returns (bytes32);
-    function PERMIT_TYPEHASH() external view returns (bytes32);
-    function transfer(address, uint256) external returns (bool);
-    function transferFrom(address, address, uint256) external returns (bool);
-    function mint(address, uint256) external;
-    function burn(address, uint256) external;
-    function approve(address, uint256) external returns (bool);
-    function push(address, uint256) external;
-    function pull(address, uint256) external;
-    function move(address, address, uint256) external;
-    function permit(address, address, uint256, uint256, bool, uint8, bytes32, bytes32) external;
-}
-
-
+import "dss-interfaces/ERC/GemAbstract.sol";
+import "dss-interfaces/dss/DaiAbstract.sol";
 
 contract DssMsm {
 
@@ -47,8 +11,7 @@ contract DssMsm {
     function deny(address usr) external auth { wards[usr] = 0; emit Deny(usr); }
     modifier auth { require(wards[msg.sender] == 1); _; }
 
-    // --- param
-
+    // --- Variable ---
     DaiAbstract public dai;
     GemAbstract public token;
     uint256 public dec;
@@ -130,7 +93,6 @@ contract DssMsm {
     }
 
     // --- View ---
-
     function getReserves() public view returns (uint256 _reserve0, uint256 _reserve1, uint256 _blockTimestampLast) {
         _reserve0 = dai.balanceOf(address(this));
         _reserve1 = token.balanceOf(address(this));
